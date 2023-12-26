@@ -1,0 +1,9 @@
+from http import HTTPStatus
+
+class BrowserNotFoundException(Exception):
+    def __init__(self, message: str, error: str, status_code: HTTPStatus):
+        self.message = message
+        self.error = error
+        self.status_code = status_code
+        super().__init__(self.message)
+
