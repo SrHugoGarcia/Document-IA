@@ -1,0 +1,6 @@
+venv
+.idea
+application/.env
+application/data/*
+_pycache_/
+*.pyc
