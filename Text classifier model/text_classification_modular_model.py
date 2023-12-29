@@ -11,6 +11,7 @@ import numpy as np
 from text_classification_model import TextClassificationModel
 from custom_callback import CustomCallback
 from keras.models import Model
+from keras.callbacks import Callback
 
 class TextClassificationModularModel(TextClassificationModel):
     
@@ -148,7 +149,7 @@ class TextClassificationModularModel(TextClassificationModel):
             epochs=epochs,
             validation_data=(x_val, y_val),
             verbose=2,
-            callbacks=[model_checkpoint_callback, early_stopping_callback]
+            callbacks=[model_checkpoint_callback,early_stopping_callback]
         )
 
         print("Métricas durante el entrenamiento:")

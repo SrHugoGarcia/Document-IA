@@ -9,7 +9,7 @@ from text_classification_modular_model import TextClassificationModularModel
 def main():
     # Uso del modelo
     clas = [0, 1, 2, 3]
-    model = TextClassificationFeedforwardModel(clases=clas, tokenizer=Tokenizer(),instruction=instructions_browser + instructions_form + instructions_wait + instructions_not)
+    model = TextClassificationModularModel(clases=clas, tokenizer=Tokenizer(),instruction=instructions_browser + instructions_form + instructions_wait + instructions_not)
     model.build_model()
     # Entrenamiento del modelo
     data_training = [instructions_browser,instructions_form,instructions_wait,instructions_not]
