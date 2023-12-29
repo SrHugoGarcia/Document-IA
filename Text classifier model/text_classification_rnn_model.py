@@ -11,7 +11,7 @@ import numpy as np
 from text_classification_model import TextClassificationModel
 from custom_callback import CustomCallback
 
-class TextClassificationModelImplements(TextClassificationModel):
+class TextClassificationRNNModel(TextClassificationModel):
     def __init__(self, clases=[], tokenizer=None,instruction = []):
         # Inicialización del modelo y configuración de capas
         self.clases = clases
@@ -33,62 +33,72 @@ class TextClassificationModelImplements(TextClassificationModel):
         ])
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-    def train_model(self, data_training_class, label_training_class, epochs=20):  # Aumentar epochs
-        # Preparación de datos para el entrenamiento
+    def prepare_data(self, data_training_class):
         all_texts = []
         all_labels = []
 
         for i, clase in enumerate(self.clases):
-
             texts = data_training_class[i]
             labels = [i] * len(texts)
             all_texts.extend(texts)
             all_labels.extend(labels)
 
-        # Tokenización y secuenciación de textos
         if self.tokenizer is None:
             self.tokenizer = Tokenizer(num_words=5000, oov_token="<OOV>")
             self.tokenizer.fit_on_texts(all_texts)
+
         sequences = self.tokenizer.texts_to_sequences(all_texts)
         padded_sequences = pad_sequences(sequences, maxlen=50, truncating='post')
-
+        
         # División de datos en conjuntos de entrenamiento y validación
         x_train, x_val, y_train, y_val = train_test_split(padded_sequences, np.array(all_labels), test_size=0.3, random_state=54)
-
+        #lote(5) y batch(lote de un conjunto de datos). epoca todo el conjunto de datos
+        #Factor de tasa de cambio a traves del error 
         # Convertir etiquetas a one-hot encoding
         y_train_numeric = np.array(y_train, dtype=int)
         y_train_categorical = tf.keras.utils.to_categorical(y_train_numeric - np.min(y_train_numeric), num_classes=len(self.clases))
-        y_val_categorical = tf.keras.utils.to_categorical(y_val - min(y_val), num_classes=len(self.clases))
+        y_val_categorical = tf.keras.utils.to_categorical(y_val - np.min(y_val), num_classes=len(self.clases))
 
-        # Entrenamiento del modelo
-        print("Entrenamiento del Modelo:")
+        return x_train, x_val, y_train_categorical, y_val_categorical
+
+    def train_model(self, x_train, y_train, x_val, y_val, epochs=400):
         #custom_callback = CustomCallback()
         #EarlyStopping 
         #se detendrá el entrenamiento si la pérdida en el conjunto de validación no mejora después de n épocas (patience=3)
         early_stopping_callback = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-
-        # Guarda el mejor modelo durante el entrenamiento
         model_checkpoint_callback = ModelCheckpoint('best_model.h5', save_best_only=True)
-        
+
         self.history = self.model.fit(
-            x_train, y_train_categorical,
+            x_train, y_train,
             epochs=epochs,
-            validation_data=(x_val, y_val_categorical),
+            validation_data=(x_val, y_val),
             verbose=2,
-            callbacks=[model_checkpoint_callback,early_stopping_callback]
+            callbacks=[model_checkpoint_callback, early_stopping_callback]
         )
-        # Imprimir métricas detalladas durante el entrenamiento
+
         print("Métricas durante el entrenamiento:")
         print(self.history.history)
+        
 
-    def predict_probability(self, texto):
-        # Preprocesamiento de texto para predicción
-        sequence = self.tokenizer.texts_to_sequences([texto])
+    def predict_probability(self, text):
+        sequence = self.tokenizer.texts_to_sequences([text])
         padded_sequence = pad_sequences(sequence, maxlen=50, truncating='post')
-
-        # Predicción de probabilidades
         probabilities = self.model.predict(np.array(padded_sequence))
         probability_for_class = probabilities[0]
+
+        # Convertimos las probabilidades a porcentajes
+        probabilities_percentage = probability_for_class * 100
+
+        # Configuramos las opciones de impresión para evitar la notación científica
+        np.set_printoptions(suppress=True, precision=4)
+        
+        print(f"Enunciado: {text}")
+        print("Probabilidades en porcentaje para cada clase:")
+        for i, percentage in enumerate(probabilities_percentage):
+            print(f"Clase {i + 1}: {percentage:.4f}%")
+
+        # Restauramos las opciones de impresión a su configuración original
+        np.set_printoptions(suppress=False, precision=8)
 
         return probability_for_class
 
