@@ -193,3 +193,5 @@ class TextClassificationModularModel(TextClassificationModel):
         plt.ylabel('Precisión')
         plt.legend()
         plt.show()
+
+#llm
